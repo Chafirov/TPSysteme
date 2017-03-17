@@ -25,13 +25,31 @@ void initialiserListeNoms(ListeNoms * f)
 {
    f->premier = NULL;
    f->dernier = NULL;
-	f->writing = 1;
+	pthread_cond_init(&(f->cond), NULL);
+	f->writers = 0;
 	pthread_mutex_init(&(f->mutexListe), NULL);
+}
+
+void ouvrirListeNoms(ListeNoms* f){
+	
 	pthread_mutex_lock(&(f->mutexListe));
+	f->writers++;
+	
+	pthread_mutex_unlock(&(f->mutexListe));
+}
+
+void fermerListeNoms(ListeNoms* f){
+
+	pthread_mutex_lock(&(f->mutexListe));
+	f->writers--;
+	pthread_cond_broadcast(&(f->cond));
+
+	pthread_mutex_unlock(&(f->mutexListe));
 }
 
 void insererNom(ListeNoms * f, Nom nom)
 {
+	pthread_mutex_lock(&(f->mutexListe));
    CelluleNom * nc = (CelluleNom *)malloc(sizeof(CelluleNom));
 
    nc->nom = strdup(nom);
@@ -48,18 +66,20 @@ void insererNom(ListeNoms * f, Nom nom)
    if (f->premier == NULL) {
       f->premier = nc;
    }
-   	printf("UNLOCK : element ajoute\n");
 	pthread_mutex_unlock(&(f->mutexListe));
+	pthread_cond_signal(&(f->cond));
 }
 
 void extraireNom(ListeNoms * f, Nom * nom)
-{
-	printf("Demande de lecture\n");
+{	
 	pthread_mutex_lock(&(f->mutexListe));
-	printf("LOCK : lecture en cours\n");
    CelluleNom * cv = f->premier; // Cellule vidée à détruire
 
-   if (f->premier) {
+	if (!f->premier && f->writers != 0){ 	
+		pthread_cond_wait(&(f->cond), &(f->mutexListe));
+   	}
+
+	if (f->premier) {
      /* Son suivant devient le premier */
      *nom = f->premier->nom;
      f->premier = f->premier->suivant;
@@ -68,33 +88,29 @@ void extraireNom(ListeNoms * f, Nom * nom)
      if (f->dernier == cv) {
         f->dernier = NULL;
 	
-     } else if (f->writing){
-	printf("UNLOCK : lecture fini, mais ce n'est pas le dernier\n");
-	pthread_mutex_lock(&(f->mutexListe));
-	}
+     }                                                                          
 
-	//il n'y a plus d'ecriture                                                                           
-	if (!(f->writing)){
-		pthread_mutex_unlock(&(f->mutexListe));
-		printf("UNLOCK: fin de lecture et recherche est fini\n");
-	}
      free(cv);
    } else {
      *nom = NULL;
    }
+	
+	pthread_mutex_unlock(&(f->mutexListe));
 }
 
 void afficherListeNoms(ListeNoms f)
 {
+	
    CelluleNom * cc = f.premier;
 
    while (cc != NULL) {
       printf("%s\n", cc->nom);
       cc = cc->suivant;
    }
+	
 }
 
 int listeNomsVide(ListeNoms f)
 {
-   return (f.premier == NULL);
+   return (f.premier == NULL && f.writers == 0);
 }

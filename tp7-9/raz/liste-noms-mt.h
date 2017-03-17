@@ -32,7 +32,8 @@ struct ListeNoms {
    CelluleNom * premier;
    CelluleNom * dernier;
    pthread_mutex_t mutexListe;
-        int writing;
+        int writers;
+	pthread_cond_t cond;
 };
 
 typedef struct ListeNoms ListeNoms;

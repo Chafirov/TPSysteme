@@ -18,7 +18,6 @@
 void* trier_mt(void* attr){
 	ListeTrieeNoms* listeTriee = trier((ListeNoms*)attr);
 	afficherListeTrieeNoms(*listeTriee);
-	printf("Tri fini\n");	
 
 	return (void*)trier((ListeNoms*)attr);
 }
@@ -26,8 +25,6 @@ void* trier_mt(void* attr){
 void* chercherFichiers_mt(void* attr){
 	RechercheNomsFichiers* recherche = (RechercheNomsFichiers*)attr;
 	chercherFichiers(recherche);
-	recherche->liste->writing = 0;
-	printf("Recherche terminee : writing = %i\n", recherche->liste->writing);
 	return (void*)1;
 }	
 
@@ -51,17 +48,19 @@ int main(int argc, char * argv[])
 	pthread_t threadTri;
 	
 	/* On remplit la liste */
-	pthread_create(&threadRecherche, NULL, chercherFichiers_mt, (void*)(&recherche));
-	//chercherFichiers(&recherche);
-	
+	ouvrirListeNoms(recherche.liste);
+	pthread_create(&threadRecherche, NULL, &chercherFichiers, &recherche);
+
 	/* On trie */
-	pthread_create(&threadTri, NULL, trier_mt, (void*)(recherche.liste));
+	pthread_create(&threadTri, NULL, &trier, recherche.liste);
 	
 	pthread_join(threadRecherche, NULL);
-	pthread_join(threadTri, (void**)listeTriee);
+	fermerListeNoms(recherche.liste);	
+	
+	pthread_join(threadTri, &listeTriee);
 	
 	/* On affiche la liste triée */
-	//afficherListeTrieeNoms(*listeTriee);
+	afficherListeTrieeNoms(*listeTriee);
 	
 	return 0;
 }
