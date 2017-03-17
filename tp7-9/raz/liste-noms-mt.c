@@ -14,26 +14,6 @@
 
 #define TRUE	1
 #define FALSE	0
-
-/*
- * Type d'une cellule de la liste
- */
-typedef struct _CelluleNom {
-   Nom                  nom;
-   struct _CelluleNom * suivant;
-} CelluleNom;
-
-/*
- * Une liste de noms est caractérisée simplement par son premier
- * et son dernier éléments.
- */
-struct ListeNoms {
-   CelluleNom * premier;
-   CelluleNom * dernier;
-   pthread_mutex_t mutexListe;
-	int writing;
-};
-
 ListeNoms * creerListeNoms()
 {
   ListeNoms * result = (ListeNoms *) malloc(sizeof(ListeNoms));
@@ -68,12 +48,15 @@ void insererNom(ListeNoms * f, Nom nom)
    if (f->premier == NULL) {
       f->premier = nc;
    }
-   pthread_mutex_unlock(&(f->mutexListe));
+   	printf("UNLOCK : element ajoute\n");
+	pthread_mutex_unlock(&(f->mutexListe));
 }
 
 void extraireNom(ListeNoms * f, Nom * nom)
 {
+	printf("Demande de lecture\n");
 	pthread_mutex_lock(&(f->mutexListe));
+	printf("LOCK : lecture en cours\n");
    CelluleNom * cv = f->premier; // Cellule vidée à détruire
 
    if (f->premier) {
@@ -84,10 +67,17 @@ void extraireNom(ListeNoms * f, Nom * nom)
      /* Si c'était le dernier */
      if (f->dernier == cv) {
         f->dernier = NULL;
-     } else if (writing){
-	pthread_mutex_lock(&(f->mutexListe);
-	}                                                                                      
- 
+	
+     } else if (f->writing){
+	printf("UNLOCK : lecture fini, mais ce n'est pas le dernier\n");
+	pthread_mutex_lock(&(f->mutexListe));
+	}
+
+	//il n'y a plus d'ecriture                                                                           
+	if (!(f->writing)){
+		pthread_mutex_unlock(&(f->mutexListe));
+		printf("UNLOCK: fin de lecture et recherche est fini\n");
+	}
      free(cv);
    } else {
      *nom = NULL;

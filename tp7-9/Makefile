@@ -1,5 +1,5 @@
 CFLAGS = -D_REENTRANT -I. -Wall -m32 -g
-LDFLAGS = -lpthread -m32
+LDFLAGS = -pthread -m32
 CC	= gcc
 
 PROGRAMMES = trier trier-mt

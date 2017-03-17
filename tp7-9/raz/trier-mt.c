@@ -18,6 +18,7 @@
 void* trier_mt(void* attr){
 	ListeTrieeNoms* listeTriee = trier((ListeNoms*)attr);
 	afficherListeTrieeNoms(*listeTriee);
+	printf("Tri fini\n");	
 
 	return (void*)trier((ListeNoms*)attr);
 }
@@ -26,7 +27,7 @@ void* chercherFichiers_mt(void* attr){
 	RechercheNomsFichiers* recherche = (RechercheNomsFichiers*)attr;
 	chercherFichiers(recherche);
 	recherche->liste->writing = 0;
-
+	printf("Recherche terminee : writing = %i\n", recherche->liste->writing);
 	return (void*)1;
 }	
 
@@ -60,7 +61,7 @@ int main(int argc, char * argv[])
 	pthread_join(threadTri, (void**)listeTriee);
 	
 	/* On affiche la liste triée */
-	afficherListeTrieeNoms(*listeTriee);
+	//afficherListeTrieeNoms(*listeTriee);
 	
 	return 0;
 }
